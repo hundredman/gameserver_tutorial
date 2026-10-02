@@ -374,6 +374,83 @@ struct S2C_Move
 };
 using MoveServerPacket = S2C_Move;
 
+struct C2S_Attack
+{
+    static constexpr uint32_t ID = 5;
+
+    int32_t kind = 0;
+    double charge = 0.0;
+    bool facing_right = false;
+
+    static C2S_Attack deserialize(std::span<const std::byte> payload)
+    {
+        Reader reader(payload);
+        C2S_Attack packet;
+        packet.kind = reader.read<int32_t>();
+        packet.charge = reader.read<double>();
+        packet.facing_right = reader.read<bool>();
+        return packet;
+    }
+
+    std::vector<std::byte> serialize() const
+    {
+        Writer body;
+        body.write<int32_t>(kind);
+        body.write<double>(charge);
+        body.write<bool>(facing_right);
+
+        PacketHeader header;
+        header.packet_id = ID;
+        header.packet_size = static_cast<uint32_t>(sizeof(PacketHeader) + body.buffer().size());
+
+        Writer writer;
+        writer.write(header);
+        writer.write_raw(body.buffer());
+        return writer.buffer();
+    }
+};
+using AttackClientPacket = C2S_Attack;
+
+struct S2C_Attack
+{
+    static constexpr uint32_t ID = 5;
+
+    int32_t userid = 0;
+    int32_t kind = 0;
+    double charge = 0.0;
+    bool facing_right = false;
+
+    static S2C_Attack deserialize(std::span<const std::byte> payload)
+    {
+        Reader reader(payload);
+        S2C_Attack packet;
+        packet.userid = reader.read<int32_t>();
+        packet.kind = reader.read<int32_t>();
+        packet.charge = reader.read<double>();
+        packet.facing_right = reader.read<bool>();
+        return packet;
+    }
+
+    std::vector<std::byte> serialize() const
+    {
+        Writer body;
+        body.write<int32_t>(userid);
+        body.write<int32_t>(kind);
+        body.write<double>(charge);
+        body.write<bool>(facing_right);
+
+        PacketHeader header;
+        header.packet_id = ID;
+        header.packet_size = static_cast<uint32_t>(sizeof(PacketHeader) + body.buffer().size());
+
+        Writer writer;
+        writer.write(header);
+        writer.write_raw(body.buffer());
+        return writer.buffer();
+    }
+};
+using AttackServerPacket = S2C_Attack;
+
 } // namespace Packet
 
 #endif // __PACKETS_GENERATED_H__

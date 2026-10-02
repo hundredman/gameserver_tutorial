@@ -12,6 +12,7 @@ namespace Blocks.Network
         Disconnect = 2,
         SetPosition = 3,
         Move = 4,
+        Attack = 5,
     }
 
     public static class PacketHelper
@@ -380,6 +381,99 @@ namespace Blocks.Network
         }
 
         public static S2C_Move Deserialize(byte[] payload, int offset = 0, int length = -1)
+        {
+            if (length < 0) length = payload.Length - offset;
+            using var ms = new MemoryStream(payload, offset, length);
+            using var reader = new BinaryReader(ms);
+            return Deserialize(reader);
+        }
+    }
+
+    public class C2S_Attack
+    {
+        public const uint ID = 5;
+
+        public int kind = 0;
+        public double charge = 0.0;
+        public bool facing_right = false;
+
+        public byte[] Serialize()
+        {
+            using var bodyMs = new MemoryStream();
+            using var bodyWriter = new BinaryWriter(bodyMs);
+            bodyWriter.Write(kind);
+            bodyWriter.Write(charge);
+            bodyWriter.Write(facing_right);
+
+            byte[] bodyBytes = bodyMs.ToArray();
+            uint packetSize = (uint)(8 + bodyBytes.Length);
+
+            using var packetMs = new MemoryStream();
+            using var packetWriter = new BinaryWriter(packetMs);
+            packetWriter.Write(ID);
+            packetWriter.Write(packetSize);
+            packetWriter.Write(bodyBytes);
+            return packetMs.ToArray();
+        }
+
+        public static C2S_Attack Deserialize(BinaryReader reader)
+        {
+            var packet = new C2S_Attack();
+            packet.kind = reader.ReadInt32();
+            packet.charge = reader.ReadDouble();
+            packet.facing_right = reader.ReadBoolean();
+            return packet;
+        }
+
+        public static C2S_Attack Deserialize(byte[] payload, int offset = 0, int length = -1)
+        {
+            if (length < 0) length = payload.Length - offset;
+            using var ms = new MemoryStream(payload, offset, length);
+            using var reader = new BinaryReader(ms);
+            return Deserialize(reader);
+        }
+    }
+
+    public class S2C_Attack
+    {
+        public const uint ID = 5;
+
+        public int userid = 0;
+        public int kind = 0;
+        public double charge = 0.0;
+        public bool facing_right = false;
+
+        public byte[] Serialize()
+        {
+            using var bodyMs = new MemoryStream();
+            using var bodyWriter = new BinaryWriter(bodyMs);
+            bodyWriter.Write(userid);
+            bodyWriter.Write(kind);
+            bodyWriter.Write(charge);
+            bodyWriter.Write(facing_right);
+
+            byte[] bodyBytes = bodyMs.ToArray();
+            uint packetSize = (uint)(8 + bodyBytes.Length);
+
+            using var packetMs = new MemoryStream();
+            using var packetWriter = new BinaryWriter(packetMs);
+            packetWriter.Write(ID);
+            packetWriter.Write(packetSize);
+            packetWriter.Write(bodyBytes);
+            return packetMs.ToArray();
+        }
+
+        public static S2C_Attack Deserialize(BinaryReader reader)
+        {
+            var packet = new S2C_Attack();
+            packet.userid = reader.ReadInt32();
+            packet.kind = reader.ReadInt32();
+            packet.charge = reader.ReadDouble();
+            packet.facing_right = reader.ReadBoolean();
+            return packet;
+        }
+
+        public static S2C_Attack Deserialize(byte[] payload, int offset = 0, int length = -1)
         {
             if (length < 0) length = payload.Length - offset;
             using var ms = new MemoryStream(payload, offset, length);

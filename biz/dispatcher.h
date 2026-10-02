@@ -56,6 +56,7 @@ private:
     Error handle_disconnect(std::shared_ptr<User> user, const Packet::C2S_Disconnect& packet);
     Error handle_set_position(std::shared_ptr<User> user, const Packet::C2S_SetPosition& packet);
     Error handle_move(std::shared_ptr<User> user, const Packet::C2S_Move& packet);
+    Error handle_attack(std::shared_ptr<User> user, const Packet::C2S_Attack& packet);
 
 private:
     std::shared_ptr<World> world_;

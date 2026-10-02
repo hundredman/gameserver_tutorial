@@ -6,6 +6,7 @@
 #include <concepts>
 #include <string>
 #include <atomic>
+#include <chrono>
 #include "packet.h"
 
 class Session;
@@ -45,6 +46,13 @@ public:
     };
     PosInfo get_pos() const;
     void set_pos(float x, float y, bool facing_right);
+    void set_facing(bool facing_right);
+
+public:
+    using clock_t = std::chrono::steady_clock;
+
+    // Returns true and records the time when this attack kind is off cooldown.
+    bool try_use_attack(int kind, clock_t::duration cooldown);
 
 private:
     std::shared_ptr<Session> session_;
@@ -53,8 +61,11 @@ private:
     std::string username_;
     bool logined_{ false };
 
-    std::pair<float, float> pos_;
-    bool facing_right_;
+    std::pair<float, float> pos_{ 0.0f, 0.0f };
+    bool facing_right_{ true };
+
+    // Index 0: melee, 1: projectile
+    clock_t::time_point last_attack_[2]{};
 };
 
 #endif // __USER_H__

@@ -5,6 +5,9 @@
 #include <memory>
 #include <span>
 #include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <cmath>
 
 Dispatcher::Dispatcher(std::shared_ptr<World> world)
     : world_(std::move(world))
@@ -76,6 +79,7 @@ void Dispatcher::init_handlers()
     register_handler<Packet::C2S_Disconnect>([this](auto user, const auto& packet) { return handle_disconnect(user, packet); });
     register_handler<Packet::C2S_SetPosition>([this](auto user, const auto& packet) { return handle_set_position(user, packet); });
     register_handler<Packet::C2S_Move>([this](auto user, const auto& packet) { return handle_move(user, packet); });
+    register_handler<Packet::C2S_Attack>([this](auto user, const auto& packet) { return handle_attack(user, packet); });
 }
 
 Error Dispatcher::handle_connect(std::shared_ptr<User> user, const Packet::C2S_Connect& packet)
@@ -158,6 +162,55 @@ Error Dispatcher::handle_move(std::shared_ptr<User> user, const Packet::C2S_Move
     send_packet.facing_right = packet.facing_right;
 
     world_->broadcast(send_packet);
+
+    return Error::None;
+}
+
+namespace
+{
+    // Attack kinds shared with the client (PlayerAttackAbility.AttackKind).
+    constexpr int ATTACK_KIND_MELEE = 1;
+    constexpr int ATTACK_KIND_PROJECTILE = 2;
+
+    // Client cooldown is 0.6s for both attacks. The server allows a little less so that
+    // network jitter between two legit attacks does not get them rejected.
+    constexpr auto ATTACK_COOLDOWN = std::chrono::milliseconds(400);
+}
+
+Error Dispatcher::handle_attack(std::shared_ptr<User> user, const Packet::C2S_Attack& packet)
+{
+    // Not logged in yet: ignore instead of disconnecting.
+    if (user->is_login() == false)
+        return Error::None;
+
+    if (packet.kind != ATTACK_KIND_MELEE && packet.kind != ATTACK_KIND_PROJECTILE)
+    {
+        std::cout << "[ATTACK] user " << user->get_user_id() << " sent invalid kind " << packet.kind << std::endl;
+        return Error::None;
+    }
+
+    if (user->try_use_attack(packet.kind, ATTACK_COOLDOWN) == false)
+    {
+        std::cout << "[ATTACK] user " << user->get_user_id() << " attack rejected (cooldown)" << std::endl;
+        return Error::None;
+    }
+
+    // Never trust the client's numbers as-is.
+    double charge = std::isfinite(packet.charge) ? std::clamp(packet.charge, 0.0, 1.0) : 0.0;
+    user->set_facing(packet.facing_right);
+
+    Packet::S2C_Attack send_packet;
+    send_packet.userid = user->get_user_id();
+    send_packet.kind = packet.kind;
+    send_packet.charge = charge;
+    send_packet.facing_right = packet.facing_right;
+
+    std::cout << "[ATTACK] user " << user->get_user_id()
+              << (packet.kind == ATTACK_KIND_MELEE ? " melee" : " projectile")
+              << " charge " << charge << std::endl;
+
+    // The attacker already played its own attack locally.
+    world_->broadcast_except_user(send_packet, user);
 
     return Error::None;
 }

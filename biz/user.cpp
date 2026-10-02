@@ -61,3 +61,22 @@ void User::set_pos(float x, float y, bool facing_right)
     pos_ = { x, y };
     facing_right_ = facing_right;
 }
+
+void User::set_facing(bool facing_right)
+{
+    facing_right_ = facing_right;
+}
+
+bool User::try_use_attack(int kind, clock_t::duration cooldown)
+{
+    if (kind < 1 || kind > 2)
+        return false;
+
+    auto& last = last_attack_[kind - 1];
+    auto now = clock_t::now();
+    if (last != clock_t::time_point{} && now - last < cooldown)
+        return false;
+
+    last = now;
+    return true;
+}

@@ -56,6 +56,21 @@
                 "vy": { "type": "float", "size": 8 },
                 "facing_right": { "type": "bool", "size": 1 }
             }
+        },
+        {
+            "id": 5,
+            "name": "Attack",
+            "client": {
+                "kind": { "type": "int", "size": 4 },
+                "charge": { "type": "float", "size": 8 },
+                "facing_right": { "type": "bool", "size": 1 }
+            },
+            "server": {
+                "userid": { "type": "int", "size": 4 },
+                "kind": { "type": "int", "size": 4 },
+                "charge": { "type": "float", "size": 8 },
+                "facing_right": { "type": "bool", "size": 1 }
+            }
         }
     ]
 }
